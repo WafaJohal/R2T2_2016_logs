@@ -1,0 +1,421 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks,
+    citecolor=black,
+    filecolor=black,
+    linkcolor=black,
+    urlcolor=black
+}
+\usepackage[a4paper, margin=1.5cm]{geometry}
+\title{R2T2 2016}
+\author{Wafa Johal}
+
+\begin{document}
+\maketitle
+\tableofcontents
+
+
+\SweaveOpts{concordance=TRUE}
+
+<<eval=T,echo=F>>=
+library(psych)
+library(ggplot2)
+library(stargazer)
+library(scales)
+library(plyr)
+library(reshape2)
+@
+
+<<eval=true,echo=false>>=
+prefix = "~/Documents/CODING/DATA_ANALYSIS/R2T2/" # Data_All_161110_E Data_All_161110(numeric)_E Data_All_161110_F Data_All_161110_F2
+
+##### THEME
+theme_Publication <- function(base_size=14, base_family="Helvetica") {
+      library(grid)
+      library(ggthemes)
+      (theme_foundation(base_size=base_size, base_family=base_family)
+       + theme(plot.title = element_text(face = "bold",
+                                         size = rel(1.2), hjust = 0.5),
+               text = element_text(),
+               panel.background = element_rect(colour = NA),
+               plot.background = element_rect(colour = NA),
+               panel.border = element_rect(colour = NA),
+               axis.title = element_text(face = "bold",size = rel(1)),
+               axis.title.y = element_text(angle=90,vjust =2),
+               axis.title.x = element_text(vjust = -0.2),
+               axis.text = element_text(), 
+               axis.line = element_line(colour="black"),
+               axis.ticks = element_line(),
+               panel.grid.major = element_line(colour="#f0f0f0"),
+               panel.grid.minor = element_blank(),
+               legend.key = element_rect(colour = NA),
+               legend.position = "bottom",
+               legend.direction = "horizontal",
+               legend.key.size= unit(0.2, "cm"),
+               legend.margin = unit(0, "cm"),
+               legend.title = element_text(face="italic"),
+               plot.margin=unit(c(10,5,5,5),"mm"),
+               strip.background=element_rect(colour="#f0f0f0",fill="#f0f0f0"),
+               strip.text = element_text(face="bold")
+          ))
+      
+}
+
+#### COLORS
+scale_fill_discrete_binary <- function(...){
+      library(scales)
+      discrete_scale("fill","Publications",manual_pal(values = c("#00a6a6","#f49f0a")), ...)}
+
+scale_fill_discrete_list <- function(...){
+      library(scales)
+      discrete_scale("fill","Publications",manual_pal(values = c("#5f0f40","#f49f0a","#9a031e","#00a6a6","#e36414","#242f40","#008148","#15b097","#ef2917","#034732","#80ced7","#d5d6aa","#9dbbae")), ...)}
+
+low_level = "#80b240"
+high_level = "#293a13"
+scale_fill_continous_list = scale_fill_gradient(low = low_level, high = high_level)
+
+##### TOOLS FUNCTIONS
+## Gives count, mean, standard deviation, standard error of the mean, and confidence interval (default 95%).
+##   data: a data frame.
+##   measurevar: the name of a column that contains the variable to be summariezed
+##   groupvars: a vector containing names of columns that contain grouping variables
+##   na.rm: a boolean that indicates whether to ignore NA's
+##   conf.interval: the percent range of the confidence interval (default is 95%)
+summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
+                      conf.interval=.95, .drop=TRUE) {
+    library(plyr)
+
+    # New version of length which can handle NA's: if na.rm==T, don't count them
+    length2 <- function (x, na.rm=FALSE) {
+        if (na.rm) sum(!is.na(x))
+        else       length(x)
+    }
+
+    # This does the summary. For each group's data frame, return a vector with
+    # N, mean, and sd
+    datac <- ddply(data, groupvars, .drop=.drop,
+      .fun = function(xx, col) {
+        c(N    = length2(xx[[col]], na.rm=na.rm),
+          mean = mean   (xx[[col]], na.rm=na.rm),
+          sd   = sd     (xx[[col]], na.rm=na.rm)
+        )
+      },
+      measurevar
+    )
+
+    # Rename the "mean" column    
+    datac <- rename(datac, c("mean" = measurevar))
+
+    datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
+
+    # Confidence interval multiplier for standard error
+    # Calculate t-statistic for confidence interval: 
+    # e.g., if conf.interval is .95, use .975 (above/below), and use df=N-1
+    ciMult <- qt(conf.interval/2 + .5, datac$N-1)
+    datac$ci <- datac$se * ciMult
+
+    return(datac)
+}
+
+remove_outliers <- function(x, na.rm = TRUE, ...) {
+  qnt <- quantile(x, probs=c(.25, .75), na.rm = na.rm, ...)
+  H <- 1.5 * IQR(x, na.rm = na.rm)
+  y <- x
+  y[x < (qnt[1] - H)] <- NA
+  y[x > (qnt[2] + H)] <- NA
+  y
+}
+
+
+freegeoip <- function(ip, format = ifelse(length(ip)==1,'list','dataframe'))
+{
+    if (1 == length(ip))
+    {
+        # a single IP address
+        require(rjson)
+        url <- paste(c("http://freegeoip.net/json/", ip), collapse='')
+        ret <- fromJSON(readLines(url, warn=FALSE))
+        if (format == 'dataframe')
+            ret <- data.frame(t(unlist(ret)))
+        return(ret)
+    } else {
+        ret <- data.frame()
+        for (i in 1:length(ip))
+        {
+          i=2
+        
+            r <- freegeoip(ip[i], format="dataframe")
+
+            ret <- rbind(ret, r)
+        }
+        return(ret)
+    }
+}   
+@
+
+
+\SweaveOpts{engine=R,eps=FALSE,echo=TRUE,prefix.string=Data_All_161110_F2/plots/}
+\section{Data\_All\_161110\_F2}
+<<results=tex,echo=F>>=
+mdata <- read.csv(file.path(prefix,"Data_All_161110_F2/CSV/Sheet_2.csv"))
+rdata = mdata[,c("ID.personne.interrogée","ID.collecteur" ,"Date.de.début","Date.de.fin" ,"Adresse.IP", "Âge" )] 
+attach(mdata)
+stargazer(rdata, title = 'Summary statistics of activities metadata')
+@
+
+
+<<eval=true,echo=false>>=
+mdata <- mdata[,colSums(is.na(mdata))<nrow(mdata)]
+
+## country
+library(devtools)
+
+library(rjson)
+rdata$country =  apply(rdata['Adresse.IP'],  1, function(x) freegeoip(x)$country_name)
+
+## sexe
+rdata$gender <- paste(mdata$Sexe,mdata$X)
+
+merge_same_res <- function(dataf, substringn) {
+    df1 <- dataf[ , grepl( substringn, names( dataf ) ) ]
+    df1[,ncol(df1)]=sub("", "CCC", df1[,ncol(df1)])
+    ind <- apply( df1 , 1 , function(x) any( x > 0 ) )
+    sub("CCC", "", do.call(paste, c(as.list(df1[ ind , ]), sep="")))
+}
+
+rdata$past_chatt = merge_same_res(mdata, "J.avais.déjà.chatté.sur.Internet")
+rdata$past_streaming_video = merge_same_res(mdata, "J.avais.déjà.vu.du.streaming.vidéo")
+rdata$past_robot = merge_same_res(mdata, "J.avais.déjà.fait.des.activités.avec.des.robots")
+
+rdata$en_communication = merge_same_res(mdata, "En.communication")
+rdata$en_programmation = merge_same_res(mdata, "En.programmation.du.robot")
+rdata$en_gestion = merge_same_res(mdata, "En.gestion.de.groupe")
+rdata$en_organisation = merge_same_res(mdata, "En.organisation.du.travail")
+
+rdata$prog_ennuyant=  merge_same_res(mdata,"La.programmation.c.est.ennuyant")
+rdata$pratik_amel=  merge_same_res(mdata,"En.pratiquant..je.m.améliore.en.programmation")
+rdata$meilleur_prog=  merge_same_res(mdata,"En.comparaison.a.d.autres.étudiants..je.suis.un.bon.progammeur")
+rdata$plus_de_robotik=  merge_same_res(mdata,"Je.souhaiterai.avoir.plus.de.temps.pour.la.robotique.a.l.école")
+rdata$filles_moins_prog=  merge_same_res(mdata,"Les.filles.aiment.moins.programmer.que.les.garcons")
+rdata$aime_prog=  merge_same_res(mdata,"J.aime.ce.que.je.programme")
+rdata$prog_fun_team=  merge_same_res(mdata,"La.progammation.est.plus.amusante.en.équipe")
+rdata$robotik_interet = merge_same_res(mdata, "La.robotique.m.intéresse")
+rdata$hard_robotik = merge_same_res(mdata, "La.robotique.est.difficile")
+rdata$hard_prog = merge_same_res(mdata, "La.programmation.est.difficile")
+rdata$useless_challenge = merge_same_res(mdata, "J.ai.appris.beaucoup.de.choses.inutiles.en.préparant.ce.challenge")
+rdata$happy_help = merge_same_res(mdata, "Je.suis.content.e..de.l.aide.reçu.pour.la.mission.R2T2")
+rdata$good_team = merge_same_res(mdata, "Nous.avons.eu.une.bonne.ambiance.de.groupe.durant.la.mission")
+rdata$serious_input = merge_same_res(mdata, "Mes.suggestions.étaient.prise.au.sérieux.par.les.autres.membres.de.mon.équipe")
+rdata$ask_adult=  merge_same_res(mdata,"Je.demandais.à.un.adulte.si.j.avais.un.problème")
+rdata$ask_teamate=  merge_same_res(mdata,"Je.discutais.avec.mon.équipe.si.j.avais.un.problème")
+rdata$student_help_robotik=  merge_same_res(mdata,"En.robotique.les.étudiants.s.entre.aident")
+rdata$influence_teamates=  merge_same_res(mdata,"J.influençais.les.décisions.prises.par.mon.équipe")
+rdata$suggestions_followed =  merge_same_res(mdata,"Toutes.mes.suggestions.étaient.suivies")
+rdata$take_initiatives =  merge_same_res(mdata,"Je.prenais.des.initiatives")
+rdata$solo_worker =  merge_same_res(mdata,"Je.ne.demandais.pas.toujours.l.avis.de.mes.co.équipiers.pour.faire.quelque.chose")
+rdata$split_work=  merge_same_res(mdata,"Nous.nous.sommes.réparti.de.façon.équitable.entre.tous.les.membres.de.l.équipe")
+rdata$unorganized_team=  merge_same_res(mdata,"Notre.équipe.etait.bruyante.et.désordonée")
+
+rdata$trained_forr2t2 =  merge_same_res(mdata,"Est.ce.que.tu.t.es.entrainé.e..spécifiquement.pour.cette.journée..en.groupe.ou.individuellement")
+
+rdata  =  cbind(rdata,mdata[, c(115:143)])
+rdata  =  cbind(rdata,mdata[, c(146:155)])
+
+write.csv(rdata,file.path(prefix,"Data_All_161110_F2/CSV/Sheet_2_sorted.csv"))
+@
+
+
+\SweaveOpts{engine=R,eps=FALSE,echo=TRUE,prefix.string=Raw_num/plots/}
+\section{sort data}
+<<results=tex,echo=F>>=
+mdata <- read.csv(file.path(prefix,"Raw_num/CSV/Sheet_F.csv"))
+rdata = mdata[,c("ID.personne.interrogée","ID.collecteur" ,"Date.de.début","Date.de.fin" ,"Adresse.IP", "Âge" )] 
+attach(mdata)
+stargazer(rdata, title = 'Summary statistics of activities metadata')
+@
+
+
+<<eval=true,echo=false>>=
+mdata <- mdata[,colSums(is.na(mdata))<nrow(mdata)]
+
+## country
+library(devtools)
+
+library(rjson)
+rdata$country =  apply(rdata['Adresse.IP'],  1, function(x) freegeoip(x)$country_name)
+
+## sexe
+rdata$gender <- paste(mdata$Sexe,mdata$x,sep="")
+rdata$gender <- sub("NA", "", rdata$gender)
+rdata$gender <- sub("1", "male", rdata$gender)
+rdata$gender <- sub("2", "female", rdata$gender)
+
+merge_same_res <- function(dataf, substringn) {
+    df1 <- dataf[ , grepl( substringn, names( dataf ) ) ]
+    df1[,ncol(df1)]= gsub("NA", "", df1[,ncol(df1)])
+    ind <- apply( df1 , 1 , function(x) any( x > 0 ) )
+    gsub("NA", "", do.call(paste, c(as.list(df1[ ind , ]), sep="")))
+}
+
+rdata$past_chatt =  merge_same_res(mdata, "J.avais.déjà.chatté.sur.Internet")
+rdata$past_streaming_video = merge_same_res(mdata, "J.avais.déjà.vu.du.streaming.vidéo")
+rdata$past_robot = merge_same_res(mdata, "J.avais.déjà.fait.des.activités.avec.des.robots")
+
+rdata$en_communication = sub("NA", "",merge_same_res(mdata, "En.communication"))
+rdata$en_programmation = merge_same_res(mdata, "En.programmation.du.robot")
+rdata$en_gestion = merge_same_res(mdata, "En.gestion.de.groupe")
+rdata$en_organisation = merge_same_res(mdata, "En.organisation.du.travail")
+
+rdata$prog_ennuyant=  merge_same_res(mdata,"La.programmation.c.est.ennuyant")
+rdata$pratik_amel=  merge_same_res(mdata,"En.pratiquant..je.m.améliore.en.programmation")
+rdata$meilleur_prog=  merge_same_res(mdata,"En.comparaison.a.d.autres.étudiants..je.suis.un.bon.progammeur")
+rdata$plus_de_robotik=  merge_same_res(mdata,"Je.souhaiterai.avoir.plus.de.temps.pour.la.robotique.a.l.école")
+rdata$filles_moins_prog=  merge_same_res(mdata,"Les.filles.aiment.moins.programmer.que.les.garcons")
+rdata$aime_prog=  merge_same_res(mdata,"J.aime.ce.que.je.programme")
+rdata$prog_fun_team=  merge_same_res(mdata,"La.progammation.est.plus.amusante.en.équipe")
+rdata$robotik_interet = merge_same_res(mdata, "La.robotique.m.intéresse")
+rdata$hard_robotik = merge_same_res(mdata, "La.robotique.est.difficile")
+rdata$hard_prog = merge_same_res(mdata, "La.programmation.est.difficile")
+rdata$useless_challenge = merge_same_res(mdata, "J.ai.appris.beaucoup.de.choses.inutiles.en.préparant.ce.challenge")
+rdata$happy_help = merge_same_res(mdata, "Je.suis.content.e..de.l.aide.reçu.pour.la.mission.R2T2")
+rdata$good_team = merge_same_res(mdata, "Nous.avons.eu.une.bonne.ambiance.de.groupe.durant.la.mission")
+rdata$serious_input = merge_same_res(mdata, "Mes.suggestions.étaient.prise.au.sérieux.par.les.autres.membres.de.mon.équipe")
+rdata$ask_adult=  merge_same_res(mdata,"Je.demandais.à.un.adulte.si.j.avais.un.problème")
+rdata$ask_teamate=  merge_same_res(mdata,"Je.discutais.avec.mon.équipe.si.j.avais.un.problème")
+rdata$student_help_robotik=  merge_same_res(mdata,"En.robotique.les.étudiants.s.entre.aident")
+rdata$influence_teamates=  merge_same_res(mdata,"J.influençais.les.décisions.prises.par.mon.équipe")
+rdata$suggestions_followed =  merge_same_res(mdata,"Toutes.mes.suggestions.étaient.suivies")
+rdata$take_initiatives =  merge_same_res(mdata,"Je.prenais.des.initiatives")
+rdata$solo_worker =  merge_same_res(mdata,"Je.ne.demandais.pas.toujours.l.avis.de.mes.co.équipiers.pour.faire.quelque.chose")
+rdata$split_work=  merge_same_res(mdata,"Nous.nous.sommes.réparti.de.façon.équitable.entre.tous.les.membres.de.l.équipe")
+rdata$unorganized_team=  merge_same_res(mdata,"Notre.équipe.etait.bruyante.et.désordonée")
+
+rdata$trained_forr2t2 =  merge_same_res(mdata,"Est.ce.que.tu.t.es.entrainé.e..spécifiquement.pour.cette.journée..en.groupe.ou.individuellement")
+
+rdata  =  cbind(rdata,mdata[, c(114:142)])
+rdata  =  cbind(rdata,mdata[, c(145:154)])
+
+write.csv(rdata,file.path(prefix,"Raw_num/CSV/Sheet_F_sorted.csv"))
+
+@
+
+
+<<results=tex,echo=F>>=
+##### sort E
+mdata <- read.csv(file.path(prefix,"Raw_num/CSV/Sheet_E.csv"))
+rdata = mdata[,c(1:5,12)] 
+attach(mdata)
+stargazer(rdata, title = 'Summary statistics of activities metadata')
+@
+
+
+<<eval=true,echo=false>>=
+mdata <- mdata[,colSums(is.na(mdata))<nrow(mdata)]
+
+## country
+library(devtools)
+
+library(rjson)
+rdata$country =  apply(rdata['IP.Address'],  1, function(x) freegeoip(x)$country_name)
+
+
+## sexe
+rdata$gender <- paste(mdata$Gender,mdata$X,sep="")
+rdata$gender <- sub("NA", "", rdata$gender)
+rdata$gender <- sub("1", "male", rdata$gender)
+rdata$gender <- sub("2", "female", rdata$gender)
+
+merge_same_res <- function(dataf, substringn) {
+    df1 <- dataf[ , grepl( substringn, names( dataf ) ) ]
+    df1[,ncol(df1)]= gsub("NA", "", df1[,ncol(df1)])
+    ind <- apply( df1 , 1 , function(x) any( x > 0 ) )
+    gsub("NA", "", do.call(paste, c(as.list(df1[ ind , ]), sep="")))
+}
+
+rdata$past_chatt =  merge_same_res(mdata, ".already.did.some.chat.on.Internet")
+rdata$past_streaming_video = merge_same_res(mdata, "I.already.saw.video.streaming.events")
+rdata$past_robot = merge_same_res(mdata, "I.had.already.done.activities.with.robots")
+
+rdata$en_communication = sub("NA", "",merge_same_res(mdata, "In.communication"))
+rdata$en_programmation = merge_same_res(mdata, "In.programming.the.robot")
+rdata$en_gestion = merge_same_res(mdata, "In.managing.the.team")
+rdata$en_organisation = merge_same_res(mdata, "In.organizing.the.work")
+
+rdata$prog_ennuyant=  merge_same_res(mdata,"Programming.is.boring")
+rdata$pratik_amel=  merge_same_res(mdata,"When.I.practise.my.programming.improves")
+rdata$meilleur_prog=  merge_same_res(mdata,"Compared.to.other.students.I.am.a.good.programmer")
+rdata$plus_de_robotik=  merge_same_res(mdata,"I.wish.I.had.more.time.for.robotics.at.school")
+rdata$filles_moins_prog=  merge_same_res(mdata,"Girls.enjoy.programming.less.than.boys.do")
+rdata$aime_prog=  merge_same_res(mdata,"I.like.what.I.program")
+rdata$prog_fun_team=  merge_same_res(mdata,"Programming.is.more.fun.when.it.s.in.team")
+rdata$robotik_interet = merge_same_res(mdata, "I.m.interested.in.robotics")
+rdata$hard_robotik = merge_same_res(mdata, "Robotics.is.difficult")
+rdata$hard_prog = merge_same_res(mdata, "Programming.is.difficult")
+rdata$useless_challenge = merge_same_res(mdata, "I.ve.learned.a.lot.of.unnecessary.things.preparing.the.challenge")
+rdata$happy_help = merge_same_res(mdata, "I.am.pleased.with.the.support.I.have.received.for.the.R2t2.mission")
+rdata$good_team = merge_same_res(mdata, "We.have.a.nice..positive.group.environment")
+rdata$serious_input = merge_same_res(mdata, "My.suggestions.are.taken.seriously.by.other.members.of.my.team")
+rdata$ask_adult=  merge_same_res(mdata,"I.spoke.to.the.teacher.if.I.had.a.problem")
+rdata$ask_teamate=  merge_same_res(mdata,"I.discussed.with.my.teammates.if.I.had.a.problem")
+rdata$student_help_robotik=  merge_same_res(mdata,"Robotics.is.a.subject.where.students.help.each.other")
+rdata$influence_teamates=  merge_same_res(mdata,"I.was.influencing.decision.taken.in.my.team")
+rdata$suggestions_followed =  merge_same_res(mdata,"All.my.suggestions.were.followed")
+rdata$take_initiatives =  merge_same_res(mdata,".was.taking.initiatives.in.the.group")
+rdata$solo_worker =  merge_same_res(mdata,"I.was.not.always.asking.my.teammates.their.opinion.in.what.I.was.doing")
+rdata$split_work=  merge_same_res(mdata,"We.splitted.the.work.equally.between.the.team.members")
+rdata$unorganized_team=  merge_same_res(mdata,"Our.team.was.noisy.and.disordely")
+
+rdata$trained_forr2t2 =  merge_same_res(mdata,"Have.you.got.some.specific.training..programming.robotics..for.this.day..in.a.group.or.individually")
+
+rdata  =  cbind(rdata,mdata[, c(143:172)])
+rdata  =  cbind(rdata,mdata[, c(175:184)])
+
+write.csv(rdata,file.path(prefix,"Raw_num/CSV/Sheet_E_sorted.csv"))
+
+@
+
+
+<<eval=true,echo=false>>=
+edata <- read.csv(file.path(prefix,"Raw_num/CSV/Sheet_E_sorted.csv"))
+drops <- c("X")
+edata = edata[ , !(names(edata) %in% drops)]
+fdata <- read.csv(file.path(prefix,"Raw_num/CSV/Sheet_F_sorted.csv"))
+
+##### todo merge edata and fdata
+## then write final csv of this merge
+@
+
+
+
+<<eval=true,echo=false>>=
+locations = mdata[,c("ID.personne.interrogée","ID.collecteur" ,"Date.de.début","Date.de.fin" ,"Adresse.IP", "Âge" )] 
+locations$lon =  apply(locations['Adresse.IP'],  1, function(x) freegeoip(x)$longitude)
+locations$lat =  apply(locations['Adresse.IP'],  1, function(x) freegeoip(x)$latitude)
+locations$city =  apply(locations['Adresse.IP'],  1, function(x) freegeoip(x)$city)
+
+
+library(leaflet)
+library(maps)
+
+# all i want is the world!
+world <- map("world", fill = TRUE, plot = FALSE) 
+@
+
+<<eval=true,echo=false>>=
+# kick out a a widget
+m = leaflet(data=world) %>% 
+  addTiles() %>% 
+  addCircleMarkers(locations$lon, locations$lat, 
+                   color = '#ff0000',popup=locations$city)
+
+library(htmlwidgets)
+saveWidget(m, file=paste(prefix,"plots/map.html",sep=""))
+@
+
+
+
+
+\end{document}
