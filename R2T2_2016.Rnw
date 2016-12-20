@@ -33,7 +33,7 @@ library(reshape2)
 prefix = "~/Documents/CODING/DATA_ANALYSIS/R2T2/" # Data_All_161110_E Data_All_161110(numeric)_E Data_All_161110_F Data_All_161110_F2
 
 ##### THEME
-theme_Publication <- function(base_size=14, base_family="Helvetica") {
+theme_Publication <- function(base_size=11, base_family="Helvetica") {
       library(grid)
       library(ggthemes)
       (theme_foundation(base_size=base_size, base_family=base_family)
@@ -57,7 +57,7 @@ theme_Publication <- function(base_size=14, base_family="Helvetica") {
                legend.key.size= unit(0.2, "cm"),
                legend.margin = unit(0, "cm"),
                legend.title = element_text(face="italic"),
-               plot.margin=unit(c(10,5,5,5),"mm"),
+               plot.margin=unit(c(8,4,4,4),"mm"),
                strip.background=element_rect(colour="#f0f0f0",fill="#f0f0f0"),
                strip.text = element_text(face="bold")
           ))
@@ -73,6 +73,23 @@ scale_fill_discrete_list <- function(...){
       library(scales)
       discrete_scale("fill","Publications",manual_pal(values = c("#5f0f40","#f49f0a","#9a031e","#00a6a6","#e36414","#242f40","#008148","#15b097","#ef2917","#034732","#80ced7","#d5d6aa","#9dbbae")), ...)}
 
+
+mred2 = "#d7263d"
+mred1 = "#f46036"
+mgreen1 = "#a8dadc"
+mgreen2 = "#457b9d"
+mneutral = "#f1faee"
+
+scale_fill5_rgn<- function(...){
+      library(scales)
+      discrete_scale("fill","Publications",manual_pal(values = c(mred2,mred1,mgreen1,mgreen2,mneutral)), ...)}
+
+scale_fill5_grn<- function(...){
+      library(scales)
+      discrete_scale("fill","Publications",manual_pal(values = c(mgreen2,mgreen1,mred1,mred2,mneutral)), ...)}
+
+  
+  
 low_level = "#80b240"
 high_level = "#293a13"
 scale_fill_continous_list = scale_fill_gradient(low = low_level, high = high_level)
@@ -169,7 +186,7 @@ freegeoip <- function(ip, format = ifelse(length(ip)==1,'list','dataframe'))
 \SweaveOpts{engine=R,eps=FALSE,echo=TRUE,prefix.string=Raw_num/plots/}
 \section{Demographic Analysis}
 <<eval=true,echo=false>>=
-mdata <- read.csv(file.path(prefix,"Raw_num/CSV/Sheet_all_sorted.csv"))
+mdata <- read.csv(file.path(prefix,"Raw_num/CSV/Sheet_all_sorted_bis.csv"))
 mdata = as.data.frame(apply(mdata,2,function(x)gsub('\\s+', '',x)))
 attach(mdata)
 @
@@ -206,8 +223,8 @@ webshot(paste(prefix,"Raw_num/plots/map.html",sep=""), file = paste(prefix,"Raw_
 
 
 \subsection{Gender}
-<<plot_gender,fig=T,echo=F,include=T,height=4,tidy=TRUE>>=
-ggplot(mdata, aes(x=gender, fill=gender))+ geom_bar() +scale_colour_Publication()+ theme_Publication()
+<<plot_gender,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=gender, fill=gender))+ geom_bar() +scale_fill_discrete_list()+ theme_Publication()
 @
 
 Gender data : 
@@ -215,9 +232,9 @@ Gender data :
 summary(mdata$gender)
 @
 
-\subsubsection{Age}
-<<plot_gender_age,fig=T,echo=F,include=T,height=4,tidy=TRUE>>=
-ggplot(mdata, aes(x=gender, y=as.numeric(levels(mdata$Âge))[mdata$Âge], fill=gender))+ geom_boxplot() +scale_colour_Publication()+ theme_Publication()
+\subsection{Age}
+<<plot_gender_age,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=gender, y=remove_outliers(as.numeric(levels(mdata$Âge)))[mdata$Âge], fill=gender))+ geom_boxplot() +scale_colour_Publication()+ theme_Publication()
 @
 
 Age data : 
@@ -225,5 +242,188 @@ Age data :
 summary(as.numeric(levels(mdata$Âge)))
 @
 
+\subsection{Past usage ...}
+\subsubsection{of Chatting systems}
+<<plot_chat_net,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=past_chatt, fill=past_chatt))+ geom_bar() +scale_fill_discrete_list()+ theme_Publication()+scale_x_discrete(breaks = c("1","2"),labels=c("Yes","No")) + guides(fill=FALSE) + xlab('Chatted on the Internet') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{of video streaming systems}
+<<plot_video_stream,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=past_streaming_video, fill=past_streaming_video))+ geom_bar() +scale_fill_discrete_list()+ theme_Publication()+scale_x_discrete(breaks = c("1","2"),labels=c("Yes","No")) + guides(fill=FALSE) + xlab('Saw video streaming events') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{of robots}
+<<plot_past_robot,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=past_robot, fill=past_robot))+ geom_bar() +scale_fill_discrete_list()+ theme_Publication()+scale_x_discrete(breaks = c("1","2"),labels=c("Yes","No")) + guides(fill=FALSE) + xlab('Activities with robots') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsection{Skils self-perception}
+\subsubsection{in communication}
+<<plot_skill_selfp_com,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=en_communication, fill=en_communication))+ geom_bar() +scale_fill5_rgn()+ theme_Publication()+scale_x_discrete(breaks = c("1","2","3","4"),labels=c("not very good","Could do better","Good","Very Good")) + guides(fill=FALSE) + xlab('Skils self-perception In Communcation') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{in programming}
+<<plot_skill_selfp_prog,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=en_programmation, fill=en_programmation))+ geom_bar() +scale_fill5_rgn()+ theme_Publication()+scale_x_discrete(breaks = c("1","2","3","4"),labels=c("not very good","Could do better","Good","Very Good")) + guides(fill=FALSE) + xlab('Skils self-perception In Programming') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{in managing}
+<<plot_skill_selfp_manag,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=en_gestion, fill=en_gestion))+ geom_bar() +scale_fill_discrete_list()+ theme_Publication()+scale_x_discrete(breaks = c("1","2","3","4"),labels=c("not very good","Could do better","Good","Very Good")) + guides(fill=FALSE) + xlab('Skils self-perception In Managing') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{in Organizing}
+<<plot_skill_selfp_organi,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=en_organisation, fill=en_organisation))+ geom_bar() +scale_fill5_rgn()+ theme_Publication()+scale_x_discrete(breaks = c("1","2","3","4"),labels=c("not very good","Could do better","Good","Very Good")) + guides(fill=FALSE) + xlab('Skils self-perception In Organizing') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+\subsection{General perception}
+\subsubsection{Programming is boring}
+<<plot_prog_ennuyant,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=prog_ennuyant, fill=prog_ennuyant))+ geom_bar() +scale_fill5_rgn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('Programming is boring') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{When I practise my programming improves}
+<<plot_pratik_amel,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=pratik_amel, fill=pratik_amel))+ geom_bar() +scale_fill5_rgn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('My practice improve my programming') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{Compared to other students I am a good programmer}
+<<plot_meilleur_prog,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=meilleur_prog, fill=meilleur_prog))+ geom_bar() +scale_fill5_rgn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{I wish I had more time for robotics at school }
+<<plot_plus_de_robotik,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=plus_de_robotik, fill=plus_de_robotik))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..))
+@
+
+\subsubsection{Girls enjoy programming less than boys do }
+<<plot_filles_moins_prog,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=filles_moins_prog, fill=filles_moins_prog))+ geom_bar() +scale_fill5_rgn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{I like what I program }
+<<plot_aime_prog,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=aime_prog, fill=aime_prog))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{Programming is more fun when it’s in team}
+<<plot_prog_fun_team,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=prog_fun_team, fill=prog_fun_team))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{I’m interested in robotics}
+<<plot_robotik_interet,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=robotik_interet, fill=robotik_interet))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+
+\subsubsection{Robotics is difficult}
+<<plot_hard_robotik,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=hard_robotik, fill=hard_robotik))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+
+\subsubsection{Programming is difficult}
+<<plot_hard_prog,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=hard_prog, fill=hard_prog))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{I’ve learned a lot of unnecessary things preparing the challenge}
+<<plot_useless_challenge,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=useless_challenge, fill=useless_challenge))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{My suggestions are taken seriously by other members of my team}
+<<plot_serious_input,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=serious_input, fill=serious_input))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{I spoke to the teacher if I had a problem}
+<<plot_ask_adult,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=ask_adult, fill=ask_adult))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{I discussed with my teammates if I had a problem}
+<<plot_ask_teamate,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=ask_teamate, fill=ask_teamate))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{I am pleased with the support I have received for the R2t2 mission}
+<<plot_happy_help,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=happy_help, fill=happy_help))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{We have a nice, positive group environment }
+<<plot_good_team,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=good_team, fill=good_team))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{Robotics is a subject where students help each other}
+<<plot_student_help_robotik,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=student_help_robotik, fill=student_help_robotik))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{I was influencing decision taken in my team}
+<<plot_influence_teamates,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=influence_teamates, fill=influence_teamates))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{All my suggestions were followed}
+<<plot_suggestions_followed,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=suggestions_followed, fill=suggestions_followed))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{I was taking initiatives in the group}
+<<plot_take_initiatives,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=take_initiatives, fill=take_initiatives))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+
+\subsubsection{I was not always asking my teammates their opinion in what I was doing}
+<<plot_solo_worker,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=solo_worker, fill=solo_worker))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+\subsubsection{We splitted the work equally between the team members}
+<<plot_split_work,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=split_work, fill=split_work))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
+
+\subsubsection{Our team was noisy and disordely}
+<<plot_unorganized_team,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(mdata, aes(x=unorganized_team, fill=unorganized_team))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+@
 
 \end{document}
