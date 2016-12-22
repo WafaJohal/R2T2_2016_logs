@@ -88,6 +88,13 @@ scale_fill5_grn<- function(...){
       library(scales)
       discrete_scale("fill","Publications",manual_pal(values = c(mgreen2,mgreen1,mred1,mred2,mneutral)), ...)}
 
+scale_fill5_grn2<- function(...){
+      library(scales)
+      discrete_scale("fill","Publications",manual_pal(values = c(mgreen2,mred2,mneutral)), ...)}
+
+scale_fill5_rgn2<- function(...){
+      library(scales)
+      discrete_scale("fill","Publications",manual_pal(values = c(mred2,mgreen2,mneutral)), ...)}
   
   
 low_level = "#80b240"
@@ -243,6 +250,23 @@ summary(as.numeric(levels(mdata$Âge)))
 @
 
 \subsection{Past usage ...}
+<<eval=T, echo=F>>=
+attach(mdata)
+
+static_descripteur <- c('ID.personne.interrogée', 'Âge', 'country', 'gender', 'language' )
+pastUse = subset.data.frame(mdata, select =  c(static_descripteur,'past_chatt','past_streaming_video','past_robot'))
+library(reshape)
+pastUse <- melt(pastUse, id=c(static_descripteur)) 
+@
+
+<<plot_past_use,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(pastUse, aes(x=variable, fill=as.factor(value)))+ geom_bar() + theme_Publication() + xlab('Past Use of') + scale_x_discrete(breaks = c('past_chatt','past_streaming_video','past_robot'),labels=c("Chatting systems","Video streaming", "Robots")) +
+ # geom_text(stat='count',aes(label=..count..),vjust=-0.5) +
+   scale_fill_manual(breaks = c("1","2"),labels=c("Yes","No"),values=c(mgreen2, mred2)) +coord_flip()
+@
+
+
+
 \subsubsection{of Chatting systems}
 <<plot_chat_net,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
 ggplot(mdata, aes(x=past_chatt, fill=past_chatt))+ geom_bar() +scale_fill_discrete_list()+ theme_Publication()+scale_x_discrete(breaks = c("1","2"),labels=c("Yes","No")) + guides(fill=FALSE) + xlab('Chatted on the Internet') +
@@ -262,10 +286,21 @@ ggplot(mdata, aes(x=past_robot, fill=past_robot))+ geom_bar() +scale_fill_discre
 @
 
 \subsection{Skils self-perception}
+<<eval=T, echo=F>>=
+skillPerception = subset.data.frame(mdata, select =  c(static_descripteur,'en_communication','en_programmation','en_gestion','en_organisation'))
+skillPerception <- melt(skillPerception, id=c(static_descripteur)) 
+@
+
+<<plot_skillPerception,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(skillPerception, aes(x=variable, fill=as.factor(value)))+ geom_bar() + theme_Publication() + xlab('Skils self-perception in') + scale_x_discrete(breaks = c('en_communication','en_programmation','en_gestion','en_organisation'),labels=c("Communcation","Programming", "Managing","Organizing")) +
+ # geom_text(stat='count',aes(label=..count..),vjust=-0.5) +
+   scale_fill_manual(breaks = c("1","2","3","4","NA"),labels=c("not very good","Could do better","Good","Very Good","Idk"),values=c(mred2,mred1, mgreen1,mgreen2,mneutral)) +coord_flip()
+@
+
 \subsubsection{in communication}
 <<plot_skill_selfp_com,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
 ggplot(mdata, aes(x=en_communication, fill=en_communication))+ geom_bar() +scale_fill5_rgn()+ theme_Publication()+scale_x_discrete(breaks = c("1","2","3","4"),labels=c("not very good","Could do better","Good","Very Good")) + guides(fill=FALSE) + xlab('Skils self-perception In Communcation') +
-  geom_text(stat='count',aes(label=..count..),vjust=-0.5)
+  geom_text(stat='count',aes(label=..count..),vjust=-0.5) 
 @
 
 \subsubsection{in programming}
@@ -286,6 +321,30 @@ ggplot(mdata, aes(x=en_organisation, fill=en_organisation))+ geom_bar() +scale_f
   geom_text(stat='count',aes(label=..count..),vjust=-0.5)
 @
 \subsection{General perception}
+<<eval=T, echo=F>>=
+gperce_breaks = c('prog_ennuyant','pratik_amel','meilleur_prog','plus_de_robotik','filles_moins_prog',
+                  'aime_prog','prog_fun_team','robotik_interet','hard_prog','useless_challenge',
+                  'serious_input','ask_adult','ask_teamate','happy_help','good_team',
+                  'student_help_robotik','suggestions_followed','take_initiatives','solo_worker',
+                  'split_work', 'unorganized_team')
+
+
+gperce_labels = c('Programming is boring','When I practise my programming improves',
+                  'Compared to other students I am a good programmer','I wish I had more time for robotics at school','Girls enjoy programming less than boys do',
+                  'I like what I program','Programming is more fun when it’s in team','I’m interested in robotics','Programming is difficult','I’ve learned a lot of unnecessary things',
+                  'My suggestions are taken seriously by others','I spoke to the teacher if I had a problem','I discussed with my teammates if I had a problem','I am pleased with the support I have received','We have a nice, positive group environment ',
+                  'Robotics is a subject where students help each other','All my suggestions were followed','I was taking initiatives in the group','I was not always asking my teammates their opinion',
+                  'We splitted the work equally between the team members', 'Our team was noisy and disordely')
+generalPerception = subset.data.frame(mdata, select =  c(static_descripteur,gperce_breaks))
+generalPerception <- melt(generalPerception, id=c(static_descripteur)) 
+@
+
+<<plot_generalPerception,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
+ggplot(generalPerception, aes(x=variable, fill=as.factor(value)))+ geom_bar() + theme_Publication() + xlab('Skils self-perception in') + scale_x_discrete(breaks = gperce_breaks,labels=gperce_labels) +
+ # geom_text(stat='count',aes(label=..count..),vjust=-0.5) +
+   scale_fill_manual(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK"),values=c(mred2,mred1, mgreen1,mgreen2,mneutral)) +coord_flip()
+@
+
 \subsubsection{Programming is boring}
 <<plot_prog_ennuyant,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
 ggplot(mdata, aes(x=prog_ennuyant, fill=prog_ennuyant))+ geom_bar() +scale_fill5_rgn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('Programming is boring') +
@@ -334,13 +393,11 @@ ggplot(mdata, aes(x=robotik_interet, fill=robotik_interet))+ geom_bar() +scale_f
   geom_text(stat='count',aes(label=..count..),vjust=-0.5)
 @
 
-
 \subsubsection{Robotics is difficult}
 <<plot_hard_robotik,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
 ggplot(mdata, aes(x=hard_robotik, fill=hard_robotik))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
   geom_text(stat='count',aes(label=..count..),vjust=-0.5)
 @
-
 
 \subsubsection{Programming is difficult}
 <<plot_hard_prog,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
@@ -408,12 +465,12 @@ ggplot(mdata, aes(x=take_initiatives, fill=take_initiatives))+ geom_bar() +scale
   geom_text(stat='count',aes(label=..count..),vjust=-0.5)
 @
 
-
 \subsubsection{I was not always asking my teammates their opinion in what I was doing}
 <<plot_solo_worker,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
 ggplot(mdata, aes(x=solo_worker, fill=solo_worker))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
   geom_text(stat='count',aes(label=..count..),vjust=-0.5)
 @
+
 \subsubsection{We splitted the work equally between the team members}
 <<plot_split_work,fig=T,echo=F,include=T,height=3.5,tidy=TRUE>>=
 ggplot(mdata, aes(x=split_work, fill=split_work))+ geom_bar() +scale_fill5_grn()+ theme_Publication()+scale_x_discrete(breaks = c("4","3","2","1","5"),labels=c("Strongly Agree","Agree","Disagree","Strongly disagree","IDK")) + guides(fill=FALSE) + xlab('') +
