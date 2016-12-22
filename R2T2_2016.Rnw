@@ -255,7 +255,6 @@ attach(mdata)
 
 static_descripteur <- c('ID.personne.interrogée', 'Âge', 'country', 'gender', 'language' )
 pastUse = subset.data.frame(mdata, select =  c(static_descripteur,'past_chatt','past_streaming_video','past_robot'))
-library(reshape)
 pastUse <- melt(pastUse, id=c(static_descripteur)) 
 @
 
